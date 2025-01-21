@@ -1,0 +1,43 @@
+{
+  "name": "gibby",
+  "version": "1.0.0",
+  "description": "Backend for a web3 developer companion",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsup --watch",
+    "start": "nodemon dist/server.js",
+    "build": "tsup",
+    "dev:server": "nodemon dist/server.js"
+  },
+  "keywords": [
+    "web3",
+    "solana"
+  ],
+  "author": "Dex-coder & CCrown",
+  "license": "ISC",
+  "dependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/mongoose": "^5.11.97",
+    "@types/morgan": "^1.9.9",
+    "bcrypt": "^5.1.1",
+    "class-validator": "^0.14.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0",
+    "typescript-class-validator": "^0.0.6"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.7",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}
