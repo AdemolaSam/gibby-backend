@@ -4,17 +4,29 @@ import * as bcrypt from "bcrypt";
 export class UserService {
   constructor(private userModel: typeof UserModel) {}
 
-  public async createUser(userDetails: IUser) {
+  public async createUser(userDetails: IUser): Promise<IUser | any> {
+    const email = userDetails.email;
+    const isExistingUser = await this.userModel.findOne({
+      email,
+    });
+    if (isExistingUser) {
+      throw new Error("Email not available");
+    }
     let hashedPassWord;
     if (userDetails.password) {
       hashedPassWord = await bcrypt.hash(userDetails.password, 13);
       userDetails.password = hashedPassWord;
     }
-    return await this.userModel.create(userDetails);
+    if (userDetails.role) {
+      userDetails.role = "regular";
+    }
+    return await this.userModel.findOne(userDetails);
   }
 
-  public async findOne(id: string) {
-    return await this.userModel.findById(id);
+  public async findOne(id: string): Promise<IUser | any> {
+    const user = await this.userModel.findById(id);
+
+    return user;
   }
 
   public async findAllUser() {

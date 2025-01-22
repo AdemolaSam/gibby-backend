@@ -1,4 +1,4 @@
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { IUser, UserModel } from "../models/user.model";
 import { AuthError } from "../middlewares/error-handler";
 import * as bcrypt from "bcrypt";
@@ -12,19 +12,21 @@ export interface ILoginCredential {
 
 export class AuthService {
   constructor(private userModel: typeof UserModel) {}
-  public async generateAccessToken(user: IUser): Promise<string> {
-    return await jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
+  public generateAccessToken(user: IUser): string {
+    const { password, ...payload } = user;
+    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
   }
 
-  public async generateRefreshToken(user: IUser): Promise<string> {
-    return await jwt.sign(user, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
+  public generateRefreshToken(user: IUser): string {
+    const { password, ...payload } = user;
+    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
   }
 
-  public async verifyToken(token: string, type: "access" | "refresh") {
+  public verifyToken(token: string, type: "access" | "refresh") {
     const secret: any =
       type === "access" ? ACCESS_TOKEN_SECRET : REFRESH_TOKEN_SECRET;
     try {
-      const decodedUser = await jwt.decode(token, secret);
+      const decodedUser = jwt.decode(token, secret);
       return decodedUser;
     } catch (error) {
       console.log("Failed to verify user", error);
@@ -35,9 +37,12 @@ export class AuthService {
   public async loginUser(
     userCredentials: ILoginCredential
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.userModel.findOne<IUser>({
-      email: userCredentials.email,
-    });
+    const user = await this.userModel
+      .findOne<IUser>({
+        email: userCredentials.email,
+      })
+      .select("+password")
+      .exec();
     if (!user) {
       throw new AuthError("User Not found");
     }
@@ -50,8 +55,8 @@ export class AuthService {
       throw new AuthError("Invalid Credentials");
     }
 
-    const accessToken = await this.generateAccessToken(user);
-    const refreshToken = await this.generateRefreshToken(user);
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = this.generateRefreshToken(user);
 
     return {
       accessToken,
