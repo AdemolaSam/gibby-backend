@@ -87,7 +87,6 @@ out
 .tern-port
 
 # Production
-/dist
 /build
 
 # TypeScript
