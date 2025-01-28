@@ -1,10 +1,11 @@
+import { CreateUserDto } from "../dtos/user.dto";
 import { IUser, UserModel } from "../models/user.model";
 import * as bcrypt from "bcrypt";
 
 export class UserService {
   constructor(private userModel: typeof UserModel) {}
 
-  public async createUser(userDetails: IUser): Promise<IUser | any> {
+  public async createUser(userDetails: CreateUserDto): Promise<IUser | any> {
     const email = userDetails.email;
     const isExistingUser = await this.userModel.findOne({
       email,

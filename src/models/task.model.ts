@@ -1,14 +1,19 @@
-import { Schema } from "mongoose";
+import { IsEnum } from "class-validator";
+import mongoose, { Mongoose, Schema } from "mongoose";
 
 const TaskSchema = new Schema(
   {
-    name: String,
-    description: String,
-    status: String,
-    owner: String,
-    isAvailable: String,
+    name: { type: String, required: true },
+    description: { type: String },
+    category: { type: String },
+    owner: { type: String },
+    isStillOpen: { type: Boolean },
+    closeDate: { type: Date },
+    workStatus: { type: String, enum: ["initialised", "completed"] },
   },
   {
     timestamps: true,
   }
 );
+
+export const TaskModel = mongoose.model("TaskModel", TaskSchema);
