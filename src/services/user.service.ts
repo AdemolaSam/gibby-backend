@@ -20,7 +20,8 @@ export class UserService {
     if (userDetails.role) {
       userDetails.role = "regular";
     }
-    return await this.userModel.findOne(userDetails);
+    const user = await this.userModel.create(userDetails);
+    return user;
   }
 
   public async findOne(id: string): Promise<IUser | any> {
