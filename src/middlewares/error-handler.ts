@@ -37,3 +37,15 @@ export class AuthError extends Error {
     this.message = "....UNAUTHORIZED!!!...";
   }
 }
+
+export class APIError extends Error {
+  public status: number;
+  constructor(
+    message: string = "Something went wrong. Please try the action again",
+    status: number = 500
+  ) {
+    super(message);
+    this.name = "APIError";
+    this.status = status;
+  }
+}
