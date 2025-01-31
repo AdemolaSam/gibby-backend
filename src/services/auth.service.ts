@@ -13,13 +13,11 @@ export interface ILoginCredential {
 export class AuthService {
   constructor(private userModel: typeof UserModel) {}
   public generateAccessToken(user: IUser): string {
-    const { password, ...payload } = user;
-    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
+    return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
   }
 
   public generateRefreshToken(user: IUser): string {
-    const { password, ...payload } = user;
-    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
+    return jwt.sign(user, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
   }
 
   public verifyToken(token: string, type: "access" | "refresh") {
@@ -49,7 +47,7 @@ export class AuthService {
 
     const isValidPassword = await bcrypt.compare(
       userCredentials.password,
-      user.password
+      user.password as string
     );
     if (!isValidPassword) {
       throw new AuthError("Invalid Credentials");

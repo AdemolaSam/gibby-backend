@@ -3,9 +3,11 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Length,
 } from "class-validator";
 import { makeOptional } from "../helpers";
 
@@ -16,7 +18,8 @@ export class CreateTaskDto {
 
   @IsNotEmpty()
   @IsString()
-  ownerId!: string;
+  @Length(24)
+  owner!: string;
 
   @IsNotEmpty()
   @IsString()
@@ -53,6 +56,14 @@ export class CreateTaskDto {
   workStatus?: "initialised" | "completed";
 }
 
-export class QueryTaskDto extends makeOptional(CreateTaskDto) {}
+export class QueryTaskDto extends makeOptional(CreateTaskDto) {
+  @IsOptional()
+  @IsInt()
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+}
 
 export class UpdateTaskDto extends makeOptional(CreateTaskDto) {}

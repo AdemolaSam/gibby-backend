@@ -54,6 +54,13 @@ var AuthError = class extends Error {
     this.message = "....UNAUTHORIZED!!!...";
   }
 };
+var APIError = class extends Error {
+  constructor(message = "Something went wrong. Please try the action again", status = 500) {
+    super(message);
+    this.name = "APIError";
+    this.status = status;
+  }
+};
 
 // src/routes/user.route.ts
 import { Router } from "express";
@@ -68,6 +75,19 @@ var userSchema = new Schema(
     alias: { type: String },
     walletAddress: { type: String, unique: true },
     email: { type: String, required: true, unique: true },
+    ranking: {
+      type: String,
+      default: "explorer",
+      enum: [
+        "explorer",
+        "initiate",
+        "pathfinder",
+        "pioneer",
+        "validator",
+        "guardian",
+        "legend"
+      ]
+    },
     role: { type: String, default: "regular", enum: ["admin", "regular"] }
   },
   {
@@ -148,12 +168,10 @@ var AuthService = class {
     this.userModel = userModel;
   }
   generateAccessToken(user) {
-    const _a = user, { password } = _a, payload = __objRest(_a, ["password"]);
-    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
+    return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: "20m" });
   }
   generateRefreshToken(user) {
-    const _a = user, { password } = _a, payload = __objRest(_a, ["password"]);
-    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
+    return jwt.sign(user, REFRESH_TOKEN_SECRET, { expiresIn: "10d" });
   }
   verifyToken(token, type) {
     const secret = type === "access" ? ACCESS_TOKEN_SECRET : REFRESH_TOKEN_SECRET;
@@ -220,7 +238,7 @@ async function authenticateJWT(req, res, next) {
   try {
     const accessToken = req.cookies.gibby_accessToken;
     const refreshToken = req.cookies.gibby_refreshToken;
-    if (!accessToken) {
+    if (!accessToken && !refreshToken) {
       return next(new AuthError("....Missing Authentication Token...."));
     }
     const isValidAccessToken = accessToken ? authService2.verifyToken(accessToken, "access") : null;
@@ -229,8 +247,10 @@ async function authenticateJWT(req, res, next) {
       return next(new AuthError("Invalid or Expired Token"));
     }
     if (!isValidAccessToken && isValidRefreshToken) {
-      const user = isValidRefreshToken;
-      const newAccessToken = authService2.generateAccessToken(user);
+      console.log("[MESSAGE]: ", "Token Renewed_______");
+      const userPayload = isValidRefreshToken;
+      const newAccessToken = authService2.generateAccessToken(userPayload._doc);
+      req.user = userPayload._doc;
       res.cookie("gibby_accessToken", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -259,6 +279,121 @@ router2.get(
 );
 var auth_route_default = router2;
 
+// src/routes/task.route.ts
+import { Router as Router3 } from "express";
+
+// src/services/task.service.ts
+var TaskService = class {
+  constructor(taskModel) {
+    this.taskModel = taskModel;
+  }
+  async createTask(taskDto) {
+    console.log(taskDto);
+    const task = await this.taskModel.findOne({
+      name: taskDto.name,
+      owner: taskDto.owner
+    });
+    if (task) {
+      throw new APIError("Task Already Exists", 400);
+    }
+    const newTask = await this.taskModel.create(taskDto);
+    return newTask;
+  }
+  /**
+   * Returns all tasks based on the query parameters
+   * @param taskDto
+   * @returns {tasks, nestCursor: string}
+   */
+  async fetchUserTasks(taskDto) {
+    let _a = taskDto, { limit, cursor } = _a, others = __objRest(_a, ["limit", "cursor"]);
+    if (!limit) {
+      limit = 20;
+    }
+    const query = { others };
+    if (cursor) {
+      query._id = { $lt: cursor };
+    }
+    const tasks = await this.taskModel.find(query).sort({ _id: -1 }).limit(limit + 1);
+    const hasNextPage = tasks.length > limit;
+    const nextCursor = hasNextPage ? tasks[limit]._id : null;
+    return {
+      tasks,
+      nextCursor
+    };
+  }
+  async fetchSingleTask(id) {
+    const task = await this.taskModel.findById(id);
+    return task;
+  }
+};
+
+// src/models/task.model.ts
+import mongoose3, { Schema as Schema2 } from "mongoose";
+var TaskSchema = new Schema2(
+  {
+    name: { type: String, required: true, trim: true, maxlength: 255 },
+    description: { type: String, trim: true },
+    category: { type: String, trim: true },
+    tags: [{ type: String, trim: true }],
+    tools: [{ type: String, trim: true }],
+    owner: {
+      type: Schema2.Types.ObjectId,
+      ref: "User",
+      required: true,
+      trim: true
+    },
+    isStillOpen: { type: Boolean, default: true },
+    source: { type: String },
+    closeDate: { type: Date },
+    workStatus: {
+      type: String,
+      enum: ["initialised", "completed"],
+      default: "initialised"
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+var TaskModel = mongoose3.model("Task", TaskSchema);
+
+// src/controllers/task.controller.ts
+var taskService = new TaskService(TaskModel);
+async function createTask(req, res, next) {
+  try {
+    const taskObj = req.body;
+    console.log("user: ", req.user);
+    taskObj.owner = req.user._id;
+    const newTask = await taskService.createTask(req.body);
+    return res.status(201).json(newTask);
+  } catch (error) {
+    next(error);
+  }
+}
+async function findSingleTask(req, res, next) {
+  try {
+    const task = await taskService.fetchSingleTask(req.params.id);
+    return res.status(200).json(task);
+  } catch (error) {
+    next(error);
+  }
+}
+async function findAllTask(req, res, next) {
+  try {
+    const task = await taskService.fetchUserTasks(req.query);
+    return res.status(200).json(task);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// src/routes/task.route.ts
+var router3 = Router3();
+router3.post("/", authenticateJWT, createTask);
+router3.get("/", authenticateJWT, findAllTask);
+router3.get("/:id", authenticateJWT, findSingleTask);
+var task_route_default = router3;
+
 // src/server.ts
 dotenv2.config();
 var PORT = process.env.PORT || 7e3;
@@ -272,9 +407,14 @@ var startServer = async () => {
     app.use(cookieParser());
     app.use("/api/auth", auth_route_default);
     app.use("/api/user", user_route_default);
+    app.use("/api/task", task_route_default);
     app.use(globalErrorHandler);
     app.listen(PORT, async () => {
-      console.log("Server listening on port: ", PORT);
+      console.log(
+        `(${process.env.NODE_ENV}) `,
+        "Server listening on port: ",
+        PORT
+      );
     });
   } catch (error) {
     console.log("Failed to start server: ", error.message);

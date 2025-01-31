@@ -6,6 +6,7 @@ import { connectToDB } from "./config/db";
 import { globalErrorHandler } from "./middlewares/error-handler";
 import userRouter from "./routes/user.route";
 import authRouter from "./routes/auth.route";
+import taskRouter from "./routes/task.route";
 dotenv.config();
 // .......................
 
@@ -24,11 +25,16 @@ const startServer = async () => {
 
     app.use("/api/auth", authRouter);
     app.use("/api/user", userRouter);
+    app.use("/api/task", taskRouter);
 
     app.use(globalErrorHandler);
 
     app.listen(PORT, async () => {
-      console.log("Server listening on port: ", PORT);
+      console.log(
+        `(${process.env.NODE_ENV}) `,
+        "Server listening on port: ",
+        PORT
+      );
     });
   } catch (error: any) {
     console.log("Failed to start server: ", error.message);

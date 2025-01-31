@@ -1,5 +1,19 @@
 import mongoose, { Schema } from "mongoose";
 
+export interface ITask {
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string;
+  owner: any;
+  isStillOpen: boolean;
+  source: string;
+  closeDate: string;
+  workStatus: "initialised" | "completed";
+  createdAt: string;
+  updatedAt: string;
+}
+
 const TaskSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 255 },
@@ -7,7 +21,12 @@ const TaskSchema = new Schema(
     category: { type: String, trim: true },
     tags: [{ type: String, trim: true }],
     tools: [{ type: String, trim: true }],
-    ownerId: { type: String, required: true, trim: true },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      trim: true,
+    },
     isStillOpen: { type: Boolean, default: true },
     source: { type: String },
     closeDate: { type: Date },
